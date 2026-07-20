@@ -3,8 +3,9 @@ set -euo pipefail
 
 mkdir -p reports/junit
 mkdir -p reports/coverage
+export PYTHONPATH="$GITHUB_WORKSPACE:${PYTHONPATH:-}"
 
-pytest -m pytest \
+pytest -m pytest tests \
   --junitxml=reports/junit/results.xml \
-  --cov=. \
+  --cov=calculator \
   --cov-report=xml:reports/coverage/cobertura.xml
