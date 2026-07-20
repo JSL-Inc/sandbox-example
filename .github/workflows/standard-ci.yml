@@ -1,0 +1,35 @@
+name: Standard CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  code-quality: write
+
+concurrency:
+  group: standard-ci-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-path-ci:
+    uses: JSL-Inc/central-workflow/.github/workflows/reusable-standard-ci.yml@main
+    with:
+      build_command: bash .github/golden-path/build.sh
+      unit_test_command: bash .github/golden-path/unit-test.sh
+      lint_command: bash .github/golden-path/lint.sh
+      junit_report_path: reports/junit/results.xml
+      cobertura_report_path: reports/coverage/cobertura.xml
+      coverage_language: Python
+      coverage_threshold: 80
+      coverage_enforcement_date: "2027-01-20"
+      publish_artifact: true
+      artifact_name: sandbox-example-package
+      artifact_path: dist/**
