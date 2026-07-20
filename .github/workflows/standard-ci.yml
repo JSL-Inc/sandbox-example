@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   golden-path-ci:
-    uses: JSL-Inc/central-workflow/.github/workflows/reusable-standard-ci.yml@main
+    uses: JSL-Inc/central-workflow/.github/workflows/reusable-standard-ci.yml@testing-coverage-fail
     with:
       build_command: bash .github/golden-path/build.sh
       unit_test_command: bash .github/golden-path/unit-test.sh
