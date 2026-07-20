@@ -28,7 +28,7 @@ jobs:
       junit_report_path: reports/junit/results.xml
       cobertura_report_path: reports/coverage/cobertura.xml
       coverage_language: Python
-      coverage_threshold: 80
+      coverage_threshold: 101
       coverage_enforcement_date: "2027-01-20"
       publish_artifact: true
       artifact_name: sandbox-example-package
