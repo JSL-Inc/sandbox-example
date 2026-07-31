@@ -1,0 +1,83 @@
+“Basically, this project was looking at how we could take the GitLab standards we already have and turn them into a GitHub golden path.
+
+I didn’t want to just copy a GitLab pipeline into GitHub Actions and call it done, because GitHub handles some of the same controls in different places. So the point was really to map the standard: branches, pull requests, environments, testing, security, releases, and approvals—to the right GitHub features.”
+
+[Show the two repositories.]
+
+“I set this up as two repositories. The first one is the central workflow repository. This is where the shared standards live—the workflows for PR validation, the deployment flow, versioning, release creation, feature tagging, and things like that.
+
+The second one is the sandbox application repository. That represents what a team would actually get when they start from a golden-path template. It has small caller workflows, its own scripts, tests, ZAP policy file, CODEOWNERS, and the actual application-specific configuration.”
+
+“The important distinction is that centralizing the workflows doesn’t mean every application has to work the exact same way. The organization owns the order and the controls, but the application team still owns how it builds, deploys, and runs its tests.”
+
+[Show sandbox file structure.]
+
+“For example, this repo has build, deploy, unit-test, integration-test, regression-test, and smoke-test scripts. In the POC those are simplified so I could prove the workflow end-to-end, but in a real application these would call the team’s actual tooling—Robot Framework, Maven, Python tooling, whatever fits the application.”
+
+[Show rulesets/environments.]
+
+“The other piece is governance. The workflow creates the evidence, but the ruleset decides what evidence is actually required before a PR can move forward.
+
+For the POC, I used repository-level rulesets so I could test safely. The intended model would be organization-level baseline rulesets for golden-path repositories, with repo-level additions only when an application needs something stricter.”
+
+“Environments are also important. GitHub environments are where we can put deployment protections, reviewers, secrets, and an auditable deployment history. The standard environment path is integration environments one through six, then EQA, optionally ePreProd, then production.”
+
+[Show a completed develop → feature PR.]
+
+“This is the first part of the flow. A developer starts on a branch like develop-s100, where the S-number represents a story. They create a pull request into a feature branch, like feature-eint1-f100.
+
+The PR workflows validate two things. First, does the branch name follow the standard? Second, is that branch promotion allowed? So a developer cannot accidentally skip from develop straight to main or use an unsupported path.”
+
+“On the PR, unit testing, coverage, CodeQL, and other PR-level checks run. The delivery jobs can look skipped here, and that’s intentional. This PR’s source branch is still develop-s100, and develop branches do not deploy.”
+
+“When the PR is merged, GitHub creates a push on the feature branch. That is when the delivery workflow sees feature-eint1-f100, recognizes it needs to deploy to eint1, and starts the integration path.”
+
+[Show completed feature delivery run.]
+
+“This is the actual delivery run. The first job reads the branch and determines the plan—what environment it goes to and which checks are needed.
+
+Then it builds the application, runs quality checks, packages an artifact, and deploys that artifact to eint1. After deployment, integration and regression tests run.”
+
+“The INT Gate is the summary result. It only passes if deployment, integration testing, and regression testing all pass. That gives us one meaningful check to enforce instead of trying to require a bunch of conditional jobs that may not apply to every branch.”
+
+[Show feature → release PR, then feature tag.]
+
+“Once the feature has passed its integration path, it can move to a release branch. When a feature PR is successfully merged to release, it creates a feature tag based on the feature ID in the branch name—like f100. That gives us traceability back to the feature or Rally work item.”
+
+[Show release/EQA run.]
+
+“Release branches go through the higher-level release path. They deploy to EQA, then run integration, regression, smoke testing, and the DAST policy check. The QA Gate evaluates those together.”
+
+“Some teams also have ePreProd. In that case, the same release candidate continues from EQA into ePreProd and completes another deployment and test gate. For teams without ePreProd, EQA is still the required non-production path.”
+
+[Show .zap/rules.tsv briefly.]
+
+“For DAST, the repo contains a ZAP rules file. In the POC I’m validating that the policy exists and is valid. The actual target state would have the centrally managed ZAP workflow scan the deployed non-production URL using that policy.”
+
+“One thing we discussed is ownership. The application may need its own rules file because it knows its application, but AppSec should own approval of changes to it through CODEOWNERS. That way a developer cannot just remove rules to make the scan pass.”
+
+[Show release → main PR.]
+
+“Once the release path is successful, the release branch can be proposed into main. Here, the PR needs exactly one release label: major, minor, or patch. That label makes the version decision explicit instead of relying on somebody manually calculating it or editing a version file.”
+
+[Show successful main delivery, then release.]
+
+“After main is successfully deployed and verified, the release workflow creates the next semantic version tag and GitHub Release. It uses the PR’s label to decide the version bump, associates the release with the deployed commit, and includes the release build artifact and generated release notes.”
+
+“So the release only gets created after the production delivery path succeeds—not just because a PR merged.”
+
+[Transition to lessons learned.]
+
+“The biggest lesson for me was that this is not really a YAML translation project. GitLab and GitHub can enforce most of the same standards, but GitHub distributes the responsibility differently.
+
+Workflows run the work. Rulesets control whether code can merge. Environments protect deployments. CODEOWNERS control sensitive files. GitHub Advanced Security provides security evidence. Those pieces all have to work together.”
+
+“Another lesson was that event context matters a lot in GitHub. A workflow running on a push sees the branch that was pushed, not the branch someone plans to merge into. That’s why develop branches do not deploy until their PR has actually been merged into the feature branch.”
+
+“I also learned that requiring every individual conditional job gets messy fast. A release workflow may have EQA, ePreProd, and production paths, but those should not all be required for every PR. That is why the pipeline uses aggregate gates like INT Gate, QA Gate, ePreProd Gate, and Release Readiness.”
+
+“The POC proves the architecture and the control flow. The next step would be replacing the placeholder scripts with real application commands, integrating Artifactory, Rally, ServiceNow, and real test frameworks, then automating repository onboarding so environments, labels, rulesets, security settings, and template files are all applied consistently.”
+
+“My takeaway is that the golden path should not force every team into identical technology. It should provide a consistent secure delivery process while leaving the application team responsible for the implementation details that are specific to their app.”
+
+“That’s the overall model I was trying to prove.”
